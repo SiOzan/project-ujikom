@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -10,9 +9,9 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|max:255|unique:users',
-            'password' => 'required|string|min:8'
+            'name'     => 'required',
+            'email'    => 'required|unique:users',
+            'password' => 'required|min:8',
         ]);
 
         if ($validator->fails()) {
@@ -20,44 +19,42 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => bcrypt($request->password),
         ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'data' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer'
-        ]);
+            'success' => true,
+            'message' => 'register berhasil',
+            'data'    => $user,
+        ], 201);
     }
 
     public function login(Request $request)
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Unauthorized'
+                'message' => 'Unauthorized',
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-
+        $user  = User::where('email', $request->email)->firstOrFail();
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login success',
+            'message'      => 'login berhasil',
             'access_token' => $token,
-            'token_type' => 'Bearer'
-        ]);
+            'type'         => 'Bearer',
+        ], 200);
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         Auth::user()->tokens()->delete();
         return response()->json([
-            'message' => 'logout success'
+            'message' => 'logout success',
         ]);
+
     }
 }
